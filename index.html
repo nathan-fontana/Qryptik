@@ -170,7 +170,7 @@
     }
 
     .settings-tab {
-      position: relative; /* so it stacks above overlay and blur */
+      position: relative;
       background: var(--container-bg);
       border-radius: 16px;
       padding: 30px;
@@ -179,10 +179,10 @@
       box-shadow: 0 0 30px rgba(0,0,0,0.3);
       text-align: left;
       display: none;
-      z-index: 1100; /* above overlay and blur */
+      z-index: 1100;
       opacity: 1;
       color: var(--settings-title-color);
-      backdrop-filter: none; /* no blur on tab content */
+      backdrop-filter: none;
       transition: opacity 0.3s ease, transform 0.3s ease;
       transform-origin: center;
     }
@@ -271,7 +271,6 @@
       background-color: var(--btn-hover-color);
     }
 
-    /* Credits read-only textbox style */
     .credits-textbox {
       width: 100%;
       resize: none;
@@ -284,7 +283,7 @@
       user-select: text;
       outline: none;
       margin-top: 8px;
-      pointer-events: none; /* read-only, no editing */
+      pointer-events: none;
       height: 60px;
       padding: 0;
     }
@@ -381,10 +380,11 @@ This tool was made using the help of ChatGPT.
       }
 
       const key = generateKey();
+      const reversedKey = key.split('').reverse().join('');
       const transformed = transformText(input, key);
       const reversed = transformed.split('').reverse().join('');
       const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
-      output.value = key + prefix + reversed;
+      output.value = reversedKey + prefix + reversed;
     }
 
     function decrypt() {
@@ -396,16 +396,17 @@ This tool was made using the help of ChatGPT.
         return;
       }
 
-      if (!input.includes('-')) {
+      if (input.length < 29 || !input.includes('-')) { // 26 key + 3 prefix at least
         output.value = "Invalid encrypted format!";
         return;
       }
 
-      const key = input.slice(0, 26);
-      const trimmed = input.slice(26);
-      const reversed = trimmed.split('').reverse().join('');
-      const invertedKey = invertKey(key);
-      const result = transformText(reversed, invertedKey);
+      const reversedKey = input.slice(0, 26).split('').reverse().join('');
+      const prefix = input.slice(26, 29);
+      const encryptedMessage = input.slice(29);
+      const reversedMessage = encryptedMessage.split('').reverse().join('');
+      const invertedKey = invertKey(reversedKey);
+      const result = transformText(reversedMessage, invertedKey);
       output.value = result;
     }
 
@@ -440,7 +441,6 @@ This tool was made using the help of ChatGPT.
 
       overlay.classList.remove("active");
 
-      // Wait for animation to finish before hiding the tab and showing gear
       setTimeout(() => {
         settingsTab.classList.remove("show");
         document.getElementById("gear").style.display = "block";
