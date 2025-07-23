@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8" />
+  <title>Qryptik</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik&display=swap" rel="stylesheet" />
+  <style>
+    * {
+      box-sizing: border-box;
+      transition: background-color 0.5s ease, color 0.5s ease;
+    }
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: 'Rubik', sans-serif;
+      transition: background-color 0.5s ease, color 0.5s ease;
+    }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+      background-color: #121212;
+      color: #fff;
+    }
+    body.dark {
+      background-color: #121212;
+      color: #ffffff;
+      --accent-color: #4caf50;
+      --container-bg: #1e1e1e;
+      --textarea-bg: #2b2b2b;
+      --textarea-color: #f1f1f1;
+      --btn-hover-color: #2e7d32;
+      --toggle-bg-off: #555;
+      --toggle-handle: white;
+      --settings-title-color: #fff;
+      --disclaimer-color: #ff4d4d;
+      --title-color: #4caf50;
+      --subtitle-color: #aaa;
+    }
+    body.light {
+      background-color: #f2f2f2;
+      color: #121212;
+      --accent-color: #2196f3;
+      --container-bg: #fff;
+      --textarea-bg: #f7f7f7;
+      --textarea-color: #121212;
+      --btn-hover-color: #1565c0;
+      --toggle-bg-off: #bbb;
+      --toggle-handle: white;
+      --settings-title-color: #000;
+      --disclaimer-color: #d32f2f;
+      --title-color: #000;
+      --subtitle-color: #000;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 800px;
+      text-align: center;
+      padding: 30px;
+      background: var(--container-bg);
+      border-radius: 16px;
+      box-shadow: 0 0 30px rgba(0,0,0,0.3);
+      position: relative;
+      z-index: 2;
+      opacity: 0;
+      animation: fadeInSlow 2.5s ease forwards;
+    }
+
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 10px;
+      color: var(--title-color);
+      transition: color 0.5s ease;
+    }
+    h2 {
+      font-size: 1.2rem;
+      color: var(--subtitle-color);
+      font-weight: 400;
+      margin-bottom: 30px;
+      transition: color 0.5s ease;
+    }
+    textarea {
+      width: 100%;
+      height: 140px;
+      margin-bottom: 20px;
+      padding: 15px;
+      border-radius: 12px;
+      border: none;
+      resize: none;
+      font-size: 1.1rem;
+      background-color: var(--textarea-bg);
+      color: var(--textarea-color);
+      transition: background-color 0.5s ease, color 0.5s ease;
+      font-weight: normal;
+    }
+    textarea::placeholder {
+      font-size: 1.1rem;
+      color: #aaa;
+      font-weight: normal;
+    }
+    textarea:focus {
+      outline: none;
+      box-shadow: 0 0 10px var(--accent-color);
+    }
+    textarea[readonly] {
+      opacity: 0.9;
+    }
+    .buttons {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin: 20px 0;
+    }
+    button {
+      padding: 14px 24px;
+      font-size: 1rem;
+      border: none;
+      border-radius: 10px;
+      background-color: var(--accent-color);
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.2s ease;
+    }
+    button:hover {
+      background-color: var(--btn-hover-color);
+      transform: scale(1.05);
+    }
+    .disclaimer {
+      color: var(--disclaimer-color);
+      margin-top: 20px;
+      font-weight: bold;
+      font-size: 0.95rem;
+    }
+    .settings-icon {
+      position: absolute;
+      top: 25px;
+      right: 25px;
+      font-size: 1.8rem;
+      cursor: pointer;
+      color: var(--accent-color);
+      z-index: 3;
+      transition: transform 0.15s ease, color 0.5s ease;
+    }
+    .settings-icon:hover {
+      transform: scale(1.2);
+    }
+
+    .overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      z-index: 1000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+    .overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Blur layer behind settings-tab */
+    .overlay::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      pointer-events: none;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+    .overlay.active::before {
+      opacity: 1;
+    }
+
+    .settings-tab {
+      position: relative; /* so it stacks above overlay and blur */
+      background: var(--container-bg);
+      border-radius: 16px;
+      padding: 30px;
+      max-width: 600px;
+      width: 90%;
+      box-shadow: 0 0 30px rgba(0,0,0,0.3);
+      text-align: left;
+      display: none;
+      z-index: 1100; /* above overlay and blur */
+      opacity: 1;
+      color: var(--settings-title-color);
+      backdrop-filter: none; /* no blur on tab content */
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      transform-origin: center;
+    }
+    .settings-tab.show {
+      display: block;
+    }
+    .settings-tab.fade-in {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .settings-tab.fade-out {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    .settings-tab h3 {
+      font-size: 2rem;
+      margin-bottom: 20px;
+      color: var(--settings-title-color);
+      transition: color 0.5s ease;
+    }
+    .settings-tab .category {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #999;
+      margin: 20px 0 10px;
+    }
+
+    .toggle-switch {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      user-select: none;
+      margin-bottom: 30px;
+    }
+    .toggle-switch label {
+      cursor: pointer;
+      font-size: 1rem;
+      user-select: none;
+      flex: 1;
+    }
+    .toggle-switch input {
+      appearance: none;
+      width: 50px;
+      height: 26px;
+      background: var(--toggle-bg-off);
+      border-radius: 50px;
+      position: relative;
+      outline: none;
+      transition: background 0.3s ease;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .toggle-switch input::before {
+      content: '';
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      top: 2px;
+      left: 2px;
+      background: var(--toggle-handle);
+      border-radius: 50%;
+      transition: transform 0.3s ease;
+    }
+    .toggle-switch input:checked {
+      background: var(--accent-color);
+    }
+    .toggle-switch input:checked::before {
+      transform: translateX(24px);
+    }
+    .close-btn {
+      margin-top: 10px;
+      padding: 10px 20px;
+      background-color: var(--accent-color);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      display: block;
+      width: 100%;
+      max-width: 600px;
+    }
+    .close-btn:hover {
+      background-color: var(--btn-hover-color);
+    }
+
+    /* Credits read-only textbox style */
+    .credits-textbox {
+      width: 100%;
+      resize: none;
+      border: none;
+      background: transparent;
+      color: var(--settings-title-color);
+      font-family: inherit;
+      font-size: 1rem;
+      line-height: 1.4;
+      user-select: text;
+      outline: none;
+      margin-top: 8px;
+      pointer-events: none; /* read-only, no editing */
+      height: 60px;
+      padding: 0;
+    }
+
+    @keyframes fadeInSlow {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+  </style>
+</head>
+<body class="dark">
+  <div class="settings-icon" id="gear" onclick="openSettings()">⚙️</div>
+
+  <div class="container">
+    <h1>Qryptik</h1>
+    <h2>A free, easy to use, message encrypter and decrypter.</h2>
+
+    <textarea id="input" placeholder="Input"></textarea>
+    <textarea id="output" placeholder="Output" readonly></textarea>
+
+    <div class="buttons">
+      <button onclick="encrypt()">ENCRYPT</button>
+      <button onclick="decrypt()">DECRYPT</button>
+      <button onclick="copyOutput()">COPY OUTPUT</button>
+    </div>
+
+    <div class="disclaimer">
+      DISCLAIMER: THIS TOOL CAN ONLY DECRYPT MESSAGES THAT WERE ENCRYPTED USING THIS TOOL!!!
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="settings-tab" id="settingsTab">
+      <h3>Settings</h3>
+
+      <div class="category">Themes</div>
+      <div class="toggle-switch">
+        <label for="themeToggle">Dark Mode</label>
+        <input type="checkbox" id="themeToggle" checked onchange="toggleTheme()" />
+      </div>
+
+      <div class="category">Credits</div>
+      <textarea class="credits-textbox" readonly rows="3">
+Creator: Nathan Fontana
+This tool was made using the help of ChatGPT.
+      </textarea>
+
+      <button class="close-btn" onclick="closeSettings()">Close</button>
+    </div>
+  </div>
+
+  <script>
+    const prefixes = ['-2b', '-9x', '-af', '-mt', '-kq', '-zz', '-pl', '-yx', '-je', '-hr'];
+    let currentKey = {};
+
+    function generateKey() {
+      const alphabet = 'abcdefghijklmnopqrstuvwxyz';
+      const shuffled = alphabet.split('').sort(() => 0.5 - Math.random());
+      const key = {};
+      for (let i = 0; i < alphabet.length; i++) {
+        key[alphabet[i]] = shuffled[i];
+      }
+      return key;
+    }
+
+    function invertKey(key) {
+      const inverted = {};
+      for (const letter in key) {
+        inverted[key[letter]] = letter;
+      }
+      return inverted;
+    }
+
+    function transformText(text, key) {
+      return text.split('').map(char => {
+        const lower = char.toLowerCase();
+        if (key[lower]) {
+          const enc = key[lower];
+          return char === lower ? enc : enc.toUpperCase();
+        } else {
+          return char;
+        }
+      }).join('');
+    }
+
+    function encrypt() {
+      const input = document.getElementById("input").value.trim();
+      const output = document.getElementById("output");
+
+      if (!input) {
+        output.value = "Input box field blank.";
+        return;
+      }
+
+      currentKey = generateKey();
+      let transformed = transformText(input, currentKey);
+      let reversed = transformed.split('').reverse().join('');
+      let prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+      output.value = prefix + reversed;
+    }
+
+    function decrypt() {
+      const input = document.getElementById("input").value.trim();
+      const output = document.getElementById("output");
+
+      if (!input) {
+        output.value = "Input box field blank.";
+        return;
+      }
+
+      if (!input.startsWith('-') || input.length < 4) {
+        output.value = "Invalid encrypted format!";
+        return;
+      }
+
+      let trimmed = input.slice(3);
+      let unreversed = trimmed.split('').reverse().join('');
+      let invertedKey = invertKey(currentKey);
+      let result = transformText(unreversed, invertedKey);
+      output.value = result;
+    }
+
+    function copyOutput() {
+      const output = document.getElementById("output");
+      output.select();
+      output.setSelectionRange(0, 99999);
+      try {
+        document.execCommand("copy");
+      } catch (err) {
+        alert("Copy failed.");
+      }
+      window.getSelection().removeAllRanges();
+    }
+
+    function openSettings() {
+      const overlay = document.getElementById("overlay");
+      const settingsTab = document.getElementById("settingsTab");
+
+      overlay.classList.add("active");
+      settingsTab.classList.add("show", "fade-in");
+      settingsTab.classList.remove("fade-out");
+      document.getElementById("gear").style.display = "none";
+    }
+
+    function closeSettings() {
+      const overlay = document.getElementById("overlay");
+      const settingsTab = document.getElementById("settingsTab");
+
+      settingsTab.classList.remove("fade-in");
+      settingsTab.classList.add("fade-out");
+
+      overlay.classList.remove("active");
+
+      // Wait for animation to finish before hiding the tab and showing gear
+      setTimeout(() => {
+        settingsTab.classList.remove("show");
+        document.getElementById("gear").style.display = "block";
+      }, 400);
+    }
+
+    function toggleTheme() {
+      const body = document.body;
+      body.classList.toggle("dark");
+      body.classList.toggle("light");
+    }
+  </script>
+</body>
+</html>
