@@ -361,25 +361,16 @@ This tool was made using the help of ChatGPT.
 
   <script>
     const prefixes = ['-2b', '-9x', '-af', '-mt', '-kq', '-zz', '-pl', '-yx', '-je', '-hr'];
-    let currentKey = {};
 
-    function generateKey() {
-      const alphabet = 'abcdefghijklmnopqrstuvwxyz';
-      const shuffled = alphabet.split('').sort(() => 0.5 - Math.random());
-      const key = {};
-      for (let i = 0; i < alphabet.length; i++) {
-        key[alphabet[i]] = shuffled[i];
-      }
-      return key;
-    }
+    // Fixed substitution key so everyone uses the same mapping
+    const fixedKey = {
+      a: 'q', b: 'w', c: 'e', d: 'r', e: 't', f: 'y', g: 'u', h: 'i', i: 'o', j: 'p',
+      k: 'a', l: 's', m: 'd', n: 'f', o: 'g', p: 'h', q: 'j', r: 'k', s: 'l', t: 'z',
+      u: 'x', v: 'c', w: 'v', x: 'b', y: 'n', z: 'm'
+    };
 
-    function invertKey(key) {
-      const inverted = {};
-      for (const letter in key) {
-        inverted[key[letter]] = letter;
-      }
-      return inverted;
-    }
+    // Invert fixed key for decrypt
+    const invertedKey = Object.fromEntries(Object.entries(fixedKey).map(([k,v]) => [v,k]));
 
     function transformText(text, key) {
       return text.split('').map(char => {
@@ -402,8 +393,7 @@ This tool was made using the help of ChatGPT.
         return;
       }
 
-      currentKey = generateKey();
-      let transformed = transformText(input, currentKey);
+      let transformed = transformText(input, fixedKey);
       let reversed = transformed.split('').reverse().join('');
       let prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
       output.value = prefix + reversed;
@@ -425,7 +415,6 @@ This tool was made using the help of ChatGPT.
 
       let trimmed = input.slice(3);
       let unreversed = trimmed.split('').reverse().join('');
-      let invertedKey = invertKey(currentKey);
       let result = transformText(unreversed, invertedKey);
       output.value = result;
     }
