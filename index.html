@@ -345,6 +345,24 @@ This tool was made using the help of ChatGPT.
   <script>
     const prefixes = ['-2b', '-9x', '-af', '-mt', '-kq', '-zz', '-pl', '-yx', '-je', '-hr'];
 
+    // Map to replace spaces and some punctuation with markers during encryption
+    const charMapEncrypt = {
+      ' ': '_',
+      '.': '*',
+      '!': '+',
+      '?': '#',
+      ',': '^',
+      '\'': '~',
+      '"': '`',
+      ':': '%',
+      ';': '$'
+    };
+    // Invert the map for decryption
+    const charMapDecrypt = Object.entries(charMapEncrypt).reduce((acc, [k,v]) => {
+      acc[v] = k;
+      return acc;
+    }, {});
+
     // Generate a fixed random alphabet key for encryption
     function generateKey() {
       const alphabet = 'abcdefghijklmnopqrstuvwxyz';
@@ -356,6 +374,22 @@ This tool was made using the help of ChatGPT.
     function invertKey(key) {
       const alphabet = 'abcdefghijklmnopqrstuvwxyz';
       return Object.fromEntries([...key].map((char, i) => [char, alphabet[i]]));
+    }
+
+    // Replace spaces and punctuation with markers before encryption
+    function maskSpecialChars(text) {
+      return text.split('').map(ch => {
+        if (charMapEncrypt[ch]) return charMapEncrypt[ch];
+        if (charMapEncrypt[ch.toLowerCase()]) return charMapEncrypt[ch.toLowerCase()];
+        return ch;
+      }).join('');
+    }
+
+    // Replace markers back to original chars after decryption
+    function unmaskSpecialChars(text) {
+      return text.split('').map(ch => {
+        return charMapDecrypt[ch] || ch;
+      }).join('');
     }
 
     function transformText(text, key) {
@@ -371,14 +405,15 @@ This tool was made using the help of ChatGPT.
     }
 
     function encrypt() {
-      const input = document.getElementById("input").value.trim();
+      const inputRaw = document.getElementById("input").value.trim();
       const output = document.getElementById("output");
 
-      if (!input) {
+      if (!inputRaw) {
         output.value = "Input box field blank.";
         return;
       }
 
+      const input = maskSpecialChars(inputRaw);
       const key = generateKey();
       const reversedKey = key.split('').reverse().join('');
       const transformed = transformText(input, key);
@@ -396,7 +431,7 @@ This tool was made using the help of ChatGPT.
         return;
       }
 
-      if (input.length < 29 || !input.includes('-')) { // 26 key + 3 prefix at least
+      if (input.length < 29 || !input.includes('-')) {
         output.value = "Invalid encrypted format!";
         return;
       }
@@ -406,8 +441,9 @@ This tool was made using the help of ChatGPT.
       const encryptedMessage = input.slice(29);
       const reversedMessage = encryptedMessage.split('').reverse().join('');
       const invertedKey = invertKey(reversedKey);
-      const result = transformText(reversedMessage, invertedKey);
-      output.value = result;
+      const decrypted = transformText(reversedMessage, invertedKey);
+      const unmasked = unmaskSpecialChars(decrypted);
+      output.value = unmasked;
     }
 
     function copyOutput() {
