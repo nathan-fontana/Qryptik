@@ -345,62 +345,72 @@ This tool was made using the help of ChatGPT.
   <script>
     const prefixes = ['-2b', '-9x', '-af', '-mt', '-kq', '-zz', '-pl', '-yx', '-je', '-hr'];
 
-    // Map to replace spaces and some punctuation with markers during encryption
+    const alphabet = 'abcdefghijklmnopqrstuvwxyz';
+
+    // Map spaces and common punctuation to underscore to mask them
     const charMapEncrypt = {
       ' ': '_',
-      '.': '*',
-      '!': '+',
-      '?': '#',
-      ',': '^',
-      '\'': '~',
-      '"': '`',
-      ':': '%',
-      ';': '$'
+      '.': '_',
+      ',': '_',
+      '!': '_',
+      '?': '_',
+      '\'': '_',
+      '"': '_',
+      ':': '_',
+      ';': '_'
     };
-    // Invert the map for decryption
-    const charMapDecrypt = Object.entries(charMapEncrypt).reduce((acc, [k,v]) => {
-      acc[v] = k;
-      return acc;
-    }, {});
+    const charMapDecrypt = {
+      '_': ' '
+    };
 
-    // Generate a fixed random alphabet key for encryption
+    // Generate a random substitution key (shuffled alphabet)
     function generateKey() {
-      const alphabet = 'abcdefghijklmnopqrstuvwxyz';
-      const shuffled = alphabet.split('').sort(() => Math.random() - 0.5).join('');
-      return shuffled;
+      const arr = alphabet.split('');
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr.join('');
     }
 
-    // Invert the key for decryption
+    // Invert key to create decryption map
     function invertKey(key) {
-      const alphabet = 'abcdefghijklmnopqrstuvwxyz';
-      return Object.fromEntries([...key].map((char, i) => [char, alphabet[i]]));
+      const map = {};
+      for (let i = 0; i < key.length; i++) {
+        map[key[i]] = alphabet[i];
+      }
+      return map;
     }
 
-    // Replace spaces and punctuation with markers before encryption
-    function maskSpecialChars(text) {
+    // Replace spaces and punctuation with underscore
+    function preprocessInput(text) {
       return text.split('').map(ch => {
-        if (charMapEncrypt[ch]) return charMapEncrypt[ch];
-        if (charMapEncrypt[ch.toLowerCase()]) return charMapEncrypt[ch.toLowerCase()];
-        return ch;
+        if (alphabet.includes(ch.toLowerCase())) {
+          return ch;
+        } else if (charMapEncrypt[ch]) {
+          return charMapEncrypt[ch];
+        } else {
+          return '_'; // Replace any unknown char with underscore
+        }
       }).join('');
     }
 
-    // Replace markers back to original chars after decryption
-    function unmaskSpecialChars(text) {
+    // Replace underscore back to spaces after decrypt
+    function postprocessOutput(text) {
       return text.split('').map(ch => {
         return charMapDecrypt[ch] || ch;
       }).join('');
     }
 
-    function transformText(text, key) {
-      return text.split('').map(char => {
-        const lower = char.toLowerCase();
-        if (key[lower]) {
-          const enc = key[lower];
-          return char === lower ? enc : enc.toUpperCase();
-        } else {
-          return char;
+    // Apply cipher mapping on letters (preserving case)
+    function applyCipher(text, keyMap) {
+      return text.split('').map(ch => {
+        const lower = ch.toLowerCase();
+        if (alphabet.includes(lower)) {
+          const cipherChar = keyMap[lower];
+          return (ch === lower) ? cipherChar : cipherChar.toUpperCase();
         }
+        return ch;
       }).join('');
     }
 
@@ -413,13 +423,32 @@ This tool was made using the help of ChatGPT.
         return;
       }
 
-      const input = maskSpecialChars(inputRaw);
+      // Mask spaces/punctuation
+      const preprocessed = preprocessInput(inputRaw);
+
+      // Generate random key
       const key = generateKey();
+
+      // Reverse key for prefix storage
       const reversedKey = key.split('').reverse().join('');
-      const transformed = transformText(input, key);
-      const reversed = transformed.split('').reverse().join('');
+
+      // Build encryption map: alphabet letter -> key letter
+      const encryptionMap = {};
+      for (let i = 0; i < alphabet.length; i++) {
+        encryptionMap[alphabet[i]] = key[i];
+      }
+
+      // Encrypt with substitution cipher
+      const ciphered = applyCipher(preprocessed, encryptionMap);
+
+      // Reverse the ciphered text
+      const reversedCipher = ciphered.split('').reverse().join('');
+
+      // Pick random prefix
       const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
-      output.value = reversedKey + prefix + reversed;
+
+      // Output format: reversed key + prefix + reversed ciphered text
+      output.value = reversedKey + prefix + reversedCipher;
     }
 
     function decrypt() {
@@ -431,19 +460,30 @@ This tool was made using the help of ChatGPT.
         return;
       }
 
+      // Must be at least 29 chars: 26 key + 3 prefix
       if (input.length < 29 || !input.includes('-')) {
         output.value = "Invalid encrypted format!";
         return;
       }
 
+      // Extract reversed key, prefix, and message
       const reversedKey = input.slice(0, 26).split('').reverse().join('');
       const prefix = input.slice(26, 29);
       const encryptedMessage = input.slice(29);
+
+      // Invert key to get decryption map
+      const decryptionMap = invertKey(reversedKey);
+
+      // Reverse encrypted message
       const reversedMessage = encryptedMessage.split('').reverse().join('');
-      const invertedKey = invertKey(reversedKey);
-      const decrypted = transformText(reversedMessage, invertedKey);
-      const unmasked = unmaskSpecialChars(decrypted);
-      output.value = unmasked;
+
+      // Decrypt letters
+      const decrypted = applyCipher(reversedMessage, decryptionMap);
+
+      // Unmask underscores back to spaces
+      const outputText = postprocessOutput(decrypted);
+
+      output.value = outputText;
     }
 
     function copyOutput() {
@@ -452,7 +492,7 @@ This tool was made using the help of ChatGPT.
       output.setSelectionRange(0, 99999);
       try {
         document.execCommand("copy");
-      } catch (err) {
+      } catch {
         alert("Copy failed.");
       }
       window.getSelection().removeAllRanges();
