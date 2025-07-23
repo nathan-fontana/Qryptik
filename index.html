@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" >
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <title>Qryptik</title>
@@ -167,22 +167,6 @@
     .overlay.active {
       opacity: 1;
       pointer-events: auto;
-    }
-
-    /* Blur layer behind settings-tab */
-    .overlay::before {
-      content: "";
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      pointer-events: none;
-      z-index: 1000;
-      opacity: 0;
-      transition: opacity 0.4s ease;
-    }
-    .overlay.active::before {
-      opacity: 1;
     }
 
     .settings-tab {
@@ -362,15 +346,18 @@ This tool was made using the help of ChatGPT.
   <script>
     const prefixes = ['-2b', '-9x', '-af', '-mt', '-kq', '-zz', '-pl', '-yx', '-je', '-hr'];
 
-    // Fixed substitution key so everyone uses the same mapping
-    const fixedKey = {
-      a: 'q', b: 'w', c: 'e', d: 'r', e: 't', f: 'y', g: 'u', h: 'i', i: 'o', j: 'p',
-      k: 'a', l: 's', m: 'd', n: 'f', o: 'g', p: 'h', q: 'j', r: 'k', s: 'l', t: 'z',
-      u: 'x', v: 'c', w: 'v', x: 'b', y: 'n', z: 'm'
-    };
+    // Generate a fixed random alphabet key for encryption
+    function generateKey() {
+      const alphabet = 'abcdefghijklmnopqrstuvwxyz';
+      const shuffled = alphabet.split('').sort(() => Math.random() - 0.5).join('');
+      return shuffled;
+    }
 
-    // Invert fixed key for decrypt
-    const invertedKey = Object.fromEntries(Object.entries(fixedKey).map(([k,v]) => [v,k]));
+    // Invert the key for decryption
+    function invertKey(key) {
+      const alphabet = 'abcdefghijklmnopqrstuvwxyz';
+      return Object.fromEntries([...key].map((char, i) => [char, alphabet[i]]));
+    }
 
     function transformText(text, key) {
       return text.split('').map(char => {
@@ -393,10 +380,11 @@ This tool was made using the help of ChatGPT.
         return;
       }
 
-      let transformed = transformText(input, fixedKey);
-      let reversed = transformed.split('').reverse().join('');
-      let prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
-      output.value = prefix + reversed;
+      const key = generateKey();
+      const transformed = transformText(input, key);
+      const reversed = transformed.split('').reverse().join('');
+      const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
+      output.value = key + prefix + reversed;
     }
 
     function decrypt() {
@@ -408,14 +396,16 @@ This tool was made using the help of ChatGPT.
         return;
       }
 
-      if (!input.startsWith('-') || input.length < 4) {
+      if (!input.includes('-')) {
         output.value = "Invalid encrypted format!";
         return;
       }
 
-      let trimmed = input.slice(3);
-      let unreversed = trimmed.split('').reverse().join('');
-      let result = transformText(unreversed, invertedKey);
+      const key = input.slice(0, 26);
+      const trimmed = input.slice(26);
+      const reversed = trimmed.split('').reverse().join('');
+      const invertedKey = invertKey(key);
+      const result = transformText(reversed, invertedKey);
       output.value = result;
     }
 
@@ -465,4 +455,3 @@ This tool was made using the help of ChatGPT.
   </script>
 </body>
 </html>
-
