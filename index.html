@@ -5,6 +5,7 @@
   <title>Qryptik</title>
   <link href="https://fonts.googleapis.com/css2?family=Rubik&display=swap" rel="stylesheet" />
   <style>
+    /* (Use the same styling as before, dark/light theme, etc.) */
     * {
       box-sizing: border-box;
       transition: background-color 0.5s ease, color 0.5s ease;
@@ -182,7 +183,6 @@
       z-index: 1100;
       opacity: 1;
       color: var(--settings-title-color);
-      backdrop-filter: none;
       transition: opacity 0.3s ease, transform 0.3s ease;
       transform-origin: center;
     }
@@ -298,7 +298,6 @@
         transform: translateY(0);
       }
     }
-
   </style>
 </head>
 <body class="dark">
@@ -344,24 +343,7 @@ This tool was made using the help of ChatGPT.
 
   <script>
     const prefixes = ['-2b', '-9x', '-af', '-mt', '-kq', '-zz', '-pl', '-yx', '-je', '-hr'];
-
     const alphabet = 'abcdefghijklmnopqrstuvwxyz';
-
-    // Map spaces and common punctuation to underscore to mask them
-    const charMapEncrypt = {
-      ' ': '_',
-      '.': '_',
-      ',': '_',
-      '!': '_',
-      '?': '_',
-      '\'': '_',
-      '"': '_',
-      ':': '_',
-      ';': '_'
-    };
-    const charMapDecrypt = {
-      '_': ' '
-    };
 
     // Generate a random substitution key (shuffled alphabet)
     function generateKey() {
@@ -382,26 +364,6 @@ This tool was made using the help of ChatGPT.
       return map;
     }
 
-    // Replace spaces and punctuation with underscore
-    function preprocessInput(text) {
-      return text.split('').map(ch => {
-        if (alphabet.includes(ch.toLowerCase())) {
-          return ch;
-        } else if (charMapEncrypt[ch]) {
-          return charMapEncrypt[ch];
-        } else {
-          return '_'; // Replace any unknown char with underscore
-        }
-      }).join('');
-    }
-
-    // Replace underscore back to spaces after decrypt
-    function postprocessOutput(text) {
-      return text.split('').map(ch => {
-        return charMapDecrypt[ch] || ch;
-      }).join('');
-    }
-
     // Apply cipher mapping on letters (preserving case)
     function applyCipher(text, keyMap) {
       return text.split('').map(ch => {
@@ -410,7 +372,7 @@ This tool was made using the help of ChatGPT.
           const cipherChar = keyMap[lower];
           return (ch === lower) ? cipherChar : cipherChar.toUpperCase();
         }
-        return ch;
+        return ch; // if not letter, return as-is (spaces/punctuation unchanged)
       }).join('');
     }
 
@@ -423,13 +385,7 @@ This tool was made using the help of ChatGPT.
         return;
       }
 
-      // Mask spaces/punctuation
-      const preprocessed = preprocessInput(inputRaw);
-
-      // Generate random key
       const key = generateKey();
-
-      // Reverse key for prefix storage
       const reversedKey = key.split('').reverse().join('');
 
       // Build encryption map: alphabet letter -> key letter
@@ -438,8 +394,8 @@ This tool was made using the help of ChatGPT.
         encryptionMap[alphabet[i]] = key[i];
       }
 
-      // Encrypt with substitution cipher
-      const ciphered = applyCipher(preprocessed, encryptionMap);
+      // Encrypt with substitution cipher (letters only)
+      const ciphered = applyCipher(inputRaw, encryptionMap);
 
       // Reverse the ciphered text
       const reversedCipher = ciphered.split('').reverse().join('');
@@ -460,30 +416,22 @@ This tool was made using the help of ChatGPT.
         return;
       }
 
-      // Must be at least 29 chars: 26 key + 3 prefix
       if (input.length < 29 || !input.includes('-')) {
         output.value = "Invalid encrypted format!";
         return;
       }
 
-      // Extract reversed key, prefix, and message
       const reversedKey = input.slice(0, 26).split('').reverse().join('');
       const prefix = input.slice(26, 29);
       const encryptedMessage = input.slice(29);
 
-      // Invert key to get decryption map
       const decryptionMap = invertKey(reversedKey);
 
-      // Reverse encrypted message
       const reversedMessage = encryptedMessage.split('').reverse().join('');
 
-      // Decrypt letters
       const decrypted = applyCipher(reversedMessage, decryptionMap);
 
-      // Unmask underscores back to spaces
-      const outputText = postprocessOutput(decrypted);
-
-      output.value = outputText;
+      output.value = decrypted;
     }
 
     function copyOutput() {
